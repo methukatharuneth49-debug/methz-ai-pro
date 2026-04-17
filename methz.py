@@ -107,35 +107,38 @@ for msg in st.session_state.messages:
         st.markdown(f'<div class="ai-container"><div class="bubble ai-bubble">{msg["content"]}</div></div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 7. INPUT & RESPONSE ---
-user_input = st.chat_input("Message METHZ AI...")
+# --- 6. USER INPUT & AI RESPONSE ---
+if prompt := st.chat_input("Mokada wenne machan?"):
+    # User message එක history එකට දානවා
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    
+    # AI එකෙන් Response එක ගන්න තැන
     with st.chat_message("assistant"):
-        placeholder = st.empty()
-        full_response = ""
+        # මෙන්න මේ instruction එක විතරයි අලුතෙන් එකතු වෙන්නේ
+        system_instruction = (
+            "You are a close friend of the user. You must speak ONLY in Singlish "
+            "(Sinhala written in English letters). Use words like 'Ado', 'Machan', "
+            "'Patta', 'Gindara', 'Siraawata', 'Mokada wenne?'. "
+            "Keep your tone very informal, fun, and like a typical Sri Lankan youth. "
+            "Be like a buddy who chats on WhatsApp. Keep answers short and cool."
+        )
         
-        try:
-            system_prompt = "Your name is METHZ AI. You are a professional assistant created by Methuka."
-            history = [{"role": "system", "content": system_prompt}] + \
-                      [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+        # System instruction එකයි පරණ messages ටිකයි එකතු කරනවා
+        full_messages = [
+            {"role": "system", "content": system_instruction}
+        ] + [
+            {"role": m["role"], "content": m["content"]}
+            for m in st.session_state.messages
+        ]
 
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=history,
-                stream=True,
-            )
-            for chunk in completion:
-                content = chunk.choices[0].delta.content
-                if content:
-                    full_response += content
-                    placeholder.markdown(full_response + "▌")
-            
-            placeholder.empty()
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
-            st.rerun()
-            
-        except Exception as e:
-            st.error(f"Error: {e}")
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=full_messages,
+            stream=False
+        )
+        
+        reply = response.choices[0].message.content
+        st.markdown(reply)
+        st.session_state.messages.append({"role": "assistant", "content": reply})
