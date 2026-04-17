@@ -2,118 +2,103 @@ import streamlit as st
 from groq import Groq
 from PIL import Image
 
-# --- 1. LOGO & PAGE CONFIG ---
-try:
-    logo_img = Image.open("logo.png")
-except:
-    logo_img = None
+# --- 1. PAGE CONFIG & LAYOUT ---
+st.set_page_config(page_title="METHZ AI Pro", page_icon="logo.png", layout="centered")
 
-st.set_page_config(page_title="METHZ AI Pro", page_icon=logo_img if logo_img else "🤖", layout="wide")
-
-# --- 2. THE FINAL CSS FIX (True Alignment) ---
+# Custom CSS for Message Alignment & Styling
 st.markdown("""
     <style>
-    .stApp { background-color: #0e1117; color: #ffffff; }
-    
-    /* Container for all bubbles */
-    .chat-wrapper {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        gap: 10px;
+    .stChatMessage {
+        border-radius: 15px;
+        margin-bottom: 10px;
     }
-
-    /* Common bubble style */
-    .bubble {
-        padding: 12px 18px;
-        border-radius: 18px;
-        max-width: 75%;
-        font-family: 'Segoe UI', sans-serif;
-        margin-bottom: 5px;
-        display: inline-block;
+    /* Hide User Avatar if possible via CSS */
+    [data-testid="stChatMessageAvatarUser"] {
+        display: none;
     }
-
-    /* USER BUBBLE: Force to RIGHT */
-    .user-container {
-        display: flex;
-        justify-content: flex-end; /* මේකෙන් තමයි දකුණට කරන්නේ */
-        width: 100%;
-    }
-    .user-bubble {
-        background-color: #1e293b;
-        color: white;
-        border-bottom-right-radius: 2px;
-    }
-
-    /* AI BUBBLE: Force to LEFT */
-    .ai-container {
-        display: flex;
-        justify-content: flex-start;
-        width: 100%;
-    }
-    .ai-bubble {
-        background-color: #0f172a;
-        color: #e2e8f0;
-        border: 1px solid #334155;
-        border-bottom-left-radius: 2px;
-    }
-
-    /* Hide Default Streamlit Elements */
-    [data-testid="stChatAvatarContainer"] { display: none !important; }
-    [data-testid="stChatMessage"] { background-color: transparent !important; border: none !important; }
-    
-    .header-text { font-size: 32px; font-weight: bold; margin-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR ---
+# --- 2. SIDEBAR (Creator & Version Info) ---
 with st.sidebar:
-    st.title("METHZ AI")
+    st.title("Settings & Info")
+    try:
+        side_img = Image.open("logo.png")
+        st.image(side_img, width=100)
+    except:
+        pass
     st.markdown("---")
-    if st.button("Clear Chat 🗑️"):
-        st.session_state.messages = []
-        st.rerun()
+    st.write(" **Creator:** Methuka")
+    st.write(" **Model:** METHZ AI Pro")
+    st.write(" **Version:** 2.0 (Trilingual)")
     st.markdown("---")
-    st.info("Created by **Methuka**")
-    st.caption("Version 3.1 Pro")
+    st.caption("All rights reserved © 2024")
 
-# --- 4. HEADER ---
-col_logo, col_title = st.columns([0.07, 0.93])
-with col_logo:
-    if logo_img: st.image(logo_img, width=55)
-    else: st.write("🤖")
-with col_title:
-    st.markdown('<div class="header-text">METHZ AI Pro</div>', unsafe_allow_html=True)
+# --- 3. MAIN INTERFACE ---
+try:
+    img = Image.open("logo.png")
+    col1, col2 = st.columns([1, 5])
+    with col1:
+        st.image(img, width=80)
+    with col2:
+        st.title("METHZ AI Pro")
+except:
+    st.title("METHZ AI Pro")
 
-# --- 6. API SETUP ---
-# කලින් තිබ්බ පරණ පේළිය අයින් කරලා මේක දාන්න:
+st.markdown("---")
+
+# --- 4. API SETUP ---
 try:
     API_KEY = st.secrets["GROQ_API_KEY"]
 except:
-    # මේක ලැප් එකේදී (Local) රන් කරද්දී ඕන වෙනවා
-    API_KEY = "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"
+    API_KEY = "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" # Local testing වලට විතරයි
 
 client = Groq(api_key=API_KEY)
 
+# --- 5. SESSION STATE (Chat History) ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- 6. DISPLAY CHAT ---
-st.markdown('<div class="chat-wrapper">', unsafe_allow_html=True)
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        st.markdown(f'<div class="user-container"><div class="bubble user-bubble">{msg["content"]}</div></div>', unsafe_allow_html=True)
-    else:
-        st.markdown(f'<div class="ai-container"><div class="bubble ai-bubble">{msg["content"]}</div></div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+# --- 6. DISPLAY CHAT MESSAGES ---
+for message in st.session_state.messages:
+    # User ට avatar එකක් නැතිව පෙන්වන්න avatar=None දාලා තියෙනවා
+    avatar_img = None if message["role"] == "user" else "logo.png"
+    with st.chat_message(message["role"], avatar=avatar_img):
+        st.markdown(message["content"])
 
-# මේක තමයි English + Sinhala + Singlish ඔක්කොම තියෙන සුපිරි prompt එක
-system_prompt = (
-                "You are a close friend of the user. You are fluent in English, "
-                "Sinhala, and Singlish. Mix these languages naturally like a typical "
-                "Sri Lankan youth. Use words like 'Ado', 'Machan', 'අඩෝ', 'මචං', 'Patta', 'Siraawata'. "
-                "If the user speaks in English, you can reply in English or mix it with Singlish. "
-                "Be informal, funny, and cool. Keep your answers short and friendly."
+# --- 7. INPUT & RESPONSE ---
+if user_input := st.chat_input("Ask Anything"):
+    # User Message
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user", avatar=None):
+        st.markdown(user_input)
+
+    # AI Response
+    with st.chat_message("assistant", avatar="logo.png"):
+        placeholder = st.empty()
+        
+        try:
+            # Language instructions (English + Sinhala + Singlish)
+            system_prompt = (
+                "You are a close friend of the user. Your name is METHZ AI, created by Methuka. "
+                "You are fluent in English, Sinhala, and Singlish. Mix these languages naturally "
+                "like a Sri Lankan youth. Use words like 'Ado', 'Machan', 'අඩෝ', 'මචං', 'Patta', 'Sira'. "
+                "Be informal, funny, and cool. Keep answers short and friendly."
             )
-history = [{"role": "system", "content": system_prompt}] + \
-    [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+            
+            history = [{"role": "system", "content": system_prompt}] + \
+                      [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+
+            # අලුත්ම Model එක භාවිතා කර ඇත
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=history,
+                stream=False
+            )
+            
+            full_response = completion.choices[0].message.content
+            placeholder.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+        except Exception as e:
+            st.error(f"Ayo error ekak mchan: {e}")
