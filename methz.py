@@ -107,35 +107,13 @@ for msg in st.session_state.messages:
         st.markdown(f'<div class="ai-container"><div class="bubble ai-bubble">{msg["content"]}</div></div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 7. INPUT & RESPONSE ---
-user_input = st.chat_input("Message METHZ AI...")
-
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    
-    with st.chat_message("assistant"):
-        placeholder = st.empty()
-        full_response = ""
-        
-        try:
-            system_prompt = "Your name is METHZ AI. You are a professional assistant created by Methuka."
-            history = [{"role": "system", "content": system_prompt}] + \
-                      [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
-
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=history,
-                stream=True,
+# මේක තමයි English + Sinhala + Singlish ඔක්කොම තියෙන සුපිරි prompt එක
+system_prompt = (
+                "You are a close friend of the user. You are fluent in English, "
+                "Sinhala, and Singlish. Mix these languages naturally like a typical "
+                "Sri Lankan youth. Use words like 'Ado', 'Machan', 'අඩෝ', 'මචං', 'Patta', 'Siraawata'. "
+                "If the user speaks in English, you can reply in English or mix it with Singlish. "
+                "Be informal, funny, and cool. Keep your answers short and friendly."
             )
-            for chunk in completion:
-                content = chunk.choices[0].delta.content
-                if content:
-                    full_response += content
-                    placeholder.markdown(full_response + "▌")
-            
-            placeholder.empty()
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
-            st.rerun()
-            
-        except Exception as e:
-            st.error(f"Error: {e}")
+history = [{"role": "system", "content": system_prompt}] + \
+    [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
