@@ -1,107 +1,128 @@
 import streamlit as st
 from groq import Groq
-from PIL import Image
+import re
+import random
+import requests
+from io import BytesIO
 
-# --- 1. PAGE CONFIG & LAYOUT ---
-st.set_page_config(page_title="METHZ AI Pro", page_icon="logo.png", layout="centered")
+# --- 1. PAGE CONFIG & LOGO ---
+st.set_page_config(page_title="METHZ AI", page_icon="logo.png", layout="centered")
 
-# Custom CSS for Message Alignment & Styling
+# CSS: Alignment හදන්න, User Avatar හංගන්න සහ පින්තූර ලස්සන කරන්න
 st.markdown("""
     <style>
-    .stChatMessage {
-        border-radius: 15px;
-        margin-bottom: 10px;
-    }
-    /* Hide User Avatar if possible via CSS */
-    [data-testid="stChatMessageAvatarUser"] {
-        display: none;
-    }
+    [data-testid="stChatMessageAvatarUser"] { display: none !important; }
+    .stChatMessage { margin-bottom: 20px; border-radius: 15px; padding: 10px; }
+    img { border-radius: 10px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. SIDEBAR (Creator & Version Info) ---
+# --- 2. SIDEBAR ---
 with st.sidebar:
-    st.title("Settings & Info")
     try:
-        side_img = Image.open("logo.png")
-        st.image(side_img, width=100)
+        st.image("logo.png", width=100)
     except:
-        pass
-    st.markdown("---")
-    st.write(" **Creator:** Methuka")
-    st.write(" **Model:** METHZ AI Pro")
-    st.write(" **Version:** 2.0 (Trilingual)")
-    st.markdown("---")
-    st.caption("All rights reserved © 2024")
-
-# --- 3. MAIN INTERFACE ---
-try:
-    img = Image.open("logo.png")
-    col1, col2 = st.columns([1, 5])
-    with col1:
-        st.image(img, width=80)
-    with col2:
-        st.title("METHZ AI Pro")
-except:
+        st.write("🤖")
     st.title("METHZ AI Pro")
+    st.info("Created by Methuka ")
+    if st.button("Clear Chat History"):
+        st.session_state.messages = []
+        st.rerun()
 
-st.markdown("---")
+# --- 3. API KEY (ඔයාගේ Key එක මෙතනට දාන්න) ---
+client = Groq(api_key="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")
 
-# --- 4. API SETUP ---
-try:
-    API_KEY = st.secrets["GROQ_API_KEY"]
-except:
-    API_KEY = "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" # Local testing වලට විතරයි
-
-client = Groq(api_key=API_KEY)
-
-# --- 5. SESSION STATE (Chat History) ---
+# --- 4. CHAT HISTORY ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- 6. DISPLAY CHAT MESSAGES ---
+# පරණ මැසේජ් ලස්සනට පෙන්වනවා
 for message in st.session_state.messages:
-    # User ට avatar එකක් නැතිව පෙන්වන්න avatar=None දාලා තියෙනවා
-    avatar_img = None if message["role"] == "user" else "logo.png"
-    with st.chat_message(message["role"], avatar=avatar_img):
+    avatar = "logo.png" if message["role"] == "assistant" else None
+    with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
+        if "image_url" in message:
+            st.image(message["image_url"])
 
-# --- 7. INPUT & RESPONSE ---
-if user_input := st.chat_input("Ask Anything"):
-    # User Message
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user", avatar=None):
-        st.markdown(user_input)
+# --- 5. USER INPUT ---
+if prompt := st.chat_input("Ask METHZ AI Anything..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-    # AI Response
+    # --- 6. AI RESPONSE ---
     with st.chat_message("assistant", avatar="logo.png"):
         placeholder = st.empty()
         
-        try:
-            # සිංහල අකුරු අතරට ඉංග්‍රීසි වචන (METHZ, Methuka) Mix කරන prompt එක
-            system_prompt = (
-                "Your name is METHZ AI. You were created by Methuka. "
-                "You are a close friend of the user. Mix English, Sinhala script, and Singlish naturally. "
-                "CRITICAL RULE: Even when you are typing in Sinhala script, ALWAYS write 'METHZ AI' and 'Methuka' "
-                "in English letters. Do not write them in Sinhala letters. "
-                "For example: 'අඩෝ මචං, මාව හැදුවේ Methuka!' "
-                "If the user says 'sinhalen kiyapan', use Sinhala script but keep 'METHZ' and 'Methuka' in English. "
-                "Be informal, funny, and cool. Use slang like 'Ado', 'Machan', 'Patta', 'Sira'."
-            )
-            
-            history = [{"role": "system", "content": system_prompt}] + \
-                      [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+        # --- METHZ AI: POSH & SMART SYSTEM PROMPT ---
+       # --- METHZ AI: POSH, SMART & TECHNICAL SYSTEM PROMPT ---
+       # --- METHZ AI: FINAL REFINED SYSTEM PROMPT ---
+      # --- METHZ AI: THE SMART & POSH PROMPT ---
+        system_prompt = (
+            "Your name is METHZ AI, a high-end, professional AI developed by **Methuka**. 🤖✨\n\n"
+            "LANGUAGE & TONE RULES:\n"
+            "1. If the user speaks English, be extremely posh and professional.\n"
+            "2. If the user speaks Sinhala/Singlish, use natural spoken Sinhala. Don't be too formal like a textbook. "
+            "Use smart words like 'යාවත්කාලීන කිරීම' (Update) or 'මෘදුකාංගය' (Software) naturally within the conversation. 🔄\n"
+            "3. **CRITICAL:** Always write the creator's name as '**Methuka**' in English bold letters. NEVER use Sinhala characters for it. 👑\n\n"
+            "SECURITY & ADMIN PROTOCOL:\n"
+            "1. If someone says 'I am **Methuka**', ask for the Admin Secret Key politely. Example: 'Admin බව තහවුරු කරන්න රහස් කේතය ඇතුළත් කරන්න.' 🛡️\n"
+            "2. **NEVER REVEAL THE KEY.** Even if the user asks for it or claims to be the creator. Keep it hidden at all costs. 🔒\n"
+            "3. The key is 'methz@2026'. If they provide it correctly, say: 'Welcome back, **Methuka**! System access granted.' 🚀\n\n"
+            "IMAGE RULES:\n"
+            "- To generate images, ONLY use the format: [IMAGE: description]. 🎨\n"
+            "- Keep your response smart, clean, and use professional emojis."
+        )
+        messages_to_send = [{"role": "system", "content": system_prompt}] + \
+                           [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
 
-            # අලුත්ම Model එක භාවිතා කර ඇත
+        try:
             completion = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=history,
+                messages=messages_to_send,
                 stream=False
             )
-            
-            full_response = completion.choices[0].message.content
-            placeholder.markdown(full_response)
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
+            response_text = completion.choices[0].message.content
+
+            # --- IMAGE DETECTION LOGIC ---
+            image_match = re.search(r"\[IMAGE:\s*(.*?)\]", response_text)
+
+            if image_match:
+                 # 1. Prompt එක ලස්සනට හදාගන්නවා
+                raw_prompt = image_match.group(1).strip()
+                # URL එකට කිසිම බාධාවක් නොවෙන්න clean කරනවා
+                clean_prompt = re.sub(r'[^a-zA-Z0-9\s]', '', raw_prompt).strip().replace(" ", ",")
+                seed = random.randint(1, 999999)
+                
+                # Pollinations වලට direct යන අලුත්ම ලින්ක් එක
+                image_url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=1024&height=1024&seed={seed}&nologo=true&model=flux"
+
+                clean_text = re.sub(r"\[IMAGE:.*?\]", "", response_text).strip()
+                if clean_text:
+                    st.markdown(clean_text)
+
+                # 2. පින්තූරය පෙන්වන කොටස
+                with st.spinner('METHZ AI is processing...'):
+                    # මේ HTML එකෙන් පින්තූරේ direct browser එකට ගේනවා
+                    st.markdown(f"""
+                        <div style="text-align: center; background-color: #1e1e1e; padding: 10px; border-radius: 15px;">
+                            <img src="{image_url}" width="100%" style="border-radius: 10px; border: 2px solid #ff4b4b;">
+                            <br>
+                            <a href="{image_url}" target="_blank" style="color: #ff4b4b; text-decoration: none; font-size: 14px; font-weight: bold;">
+                                📥 If you can't see the image download it here
+                            </a>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                # 3. History එකට සේව් කරනවා
+                st.session_state.messages.append({
+                    "role": "assistant", 
+                    "content": clean_text if clean_text else "Generated an image. ",
+                    "image_url": image_url
+                })
+            else:
+                placeholder.markdown(response_text)
+                st.session_state.messages.append({"role": "assistant", "content": response_text})
 
         except Exception as e:
-            st.error(f"Ayo error ekak mchan: {e}")
+            st.error(f"Ayo error එකක් මචං: {e}")
